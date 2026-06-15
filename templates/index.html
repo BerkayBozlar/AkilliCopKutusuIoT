@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Şehir | Çöp Kutusu Takip Sistemi</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; text-align: center; margin-top: 50px; }
+        .dashboard { background-color: #1e1e1e; width: 400px; margin: 0 auto; padding: 30px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0,255,128,0.2); border: 1px solid #333; }
+        h1 { color: #00ff88; font-size: 24px; }
+        .trash-container { width: 150px; height: 250px; border: 4px solid #555; border-radius: 10px 10px 20px 20px; margin: 30px auto; position: relative; background-color: #222; overflow: hidden; }
+        .trash-fill { width: 100%; position: absolute; bottom: 0; background: linear-gradient(0deg, #00ff88 0%, #00b35f 100%); transition: height 0.5s ease-in-out, background 0.5s ease; }
+        .critical-fill { background: linear-gradient(0deg, #ff4c4c 0%, #b30000 100%); }
+        .info { font-size: 18px; margin-top: 20px; }
+        .status { font-weight: bold; margin-top: 10px; font-size: 20px; }
+        .normal { color: #00ff88; }
+        .critical { color: #ff4c4c; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <h1>🏙️ Akıllı Şehir Kontrol Merkezi</h1>
+        <p style="color: #aaa;">Cihaz: <span id="cihazAdiText" style="color:#fff;">Yükleniyor...</span></p>
+
+        <div class="trash-container">
+            <div id="fillBar" class="trash-fill" style="height: 0%;"></div>
+        </div>
+
+        <div class="info">Anlık Doluluk: <span id="oranText">%0</span></div>
+        <div id="durumText" class="status normal">Bağlanıyor...</div>
+    </div>
+
+    <script>
+        // Her 2 saniyede bir DynamoDB'den güncel veriyi çeken JavaScript fonksiyonu
+        setInterval(function() {
+            fetch('/api/veri')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.doluluk_orani !== undefined) {
+                        document.getElementById('cihazAdiText').innerText = data.cihaz_id;
+                        const oran = data.doluluk_orani;
+                        const durum = data.durum;
+                        
+                        // Yüzdelik barı ve metinleri güncelle
+                        const fillBar = document.getElementById('fillBar');
+                        document.getElementById('oranText').innerText = "%" + oran;
+                        fillBar.style.height = oran + "%";
+
+                        // Doluluk %85'ten fazlaysa rengi kırmızı (Kritik) yap
+                        const durumText = document.getElementById('durumText');
+                        durumText.innerText = durum;
+
+                        if (oran > 85) {
+                            fillBar.classList.add('critical-fill');
+                            durumText.className = "status critical";
+                        } else {
+                            fillBar.classList.remove('critical-fill');
+                            durumText.className = "status normal";
+                        }
+                    }
+                })
+                .catch(error => console.error("Veri çekme hatası:", error));
+        }, 2000); // 2000 milisaniye = 2 saniye
+    </script>
+</body>
+</html>
